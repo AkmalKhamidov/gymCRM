@@ -1,0 +1,102 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Doe",
+      "username": "john_doe",
+      "password": "password123",
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "username": "jane_smith",
+      "password": "pass456",
+      "isActive": true
+    }
+  ],
+  "trainees": [
+    {
+      "id": 1,
+      "dateOfBirth": "1990-05-15",
+      "address": "123 Main St",
+      "user": {
+        "id": 1,
+        "firstName": "John",
+        "lastName": "Doe",
+        "username": "john_doe",
+        "password": "password123",
+        "isActive": true
+      }
+    }
+  ],
+  "trainers": [
+    {
+      "id": 1,
+      "specialization": {
+        "id": 1,
+        "trainingTypeName": "Cardio"
+      },
+      "user": {
+        "id": 2,
+        "firstName": "Jane",
+        "lastName": "Smith",
+        "username": "jane_smith",
+        "password": "pass456",
+        "isActive": true
+      }
+    }
+  ],
+  "trainingTypes": [
+    {
+      "id": 1,
+      "trainingTypeName": "Weightlifting"
+    },
+    {
+      "id": 2,
+      "trainingTypeName": "Yoga"
+    }
+  ],
+  "trainings": [
+    {
+      "id": 1,
+      "trainee": {
+        "id": 1,
+        "dateOfBirth": "1990-05-15",
+        "address": "123 Main St",
+        "user": {
+          "id": 1,
+          "firstName": "John",
+          "lastName": "Doe",
+          "username": "john_doe",
+          "password": "password123",
+          "isActive": true
+        }
+      },
+      "trainer": {
+        "id": 1,
+        "specialization": {
+          "id": 1,
+          "trainingTypeName": "Cardio"
+        },
+        "user": {
+          "id": 2,
+          "firstName": "Jane",
+          "lastName": "Smith",
+          "username": "jane_smith",
+          "password": "pass456",
+          "isActive": true
+        }
+      },
+      "trainingName": "Morning Workout",
+      "trainingType": {
+        "id": 1,
+        "trainingTypeName": "Weightlifting"
+      },
+      "trainingDate": "2023-01-20",
+      "trainingDuration": 60
+    }
+  ]
+}
