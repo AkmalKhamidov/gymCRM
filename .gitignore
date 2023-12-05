@@ -13,6 +13,9 @@ target/
 *.iml
 *.ipr
 
+### Sensitive Data ###
+database.properties
+
 ### Eclipse ###
 .apt_generated
 .classpath
