@@ -19,12 +19,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+
+// Todo: move all queries to file and use @Value annotation to import them.
 @Component
 @Slf4j
 public class TrainingDAOImpl implements EntityDAO<Training> {
 
-    @Autowired
     private SessionFactory sessionFactory;
+
+    @Autowired
+    public TrainingDAOImpl(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
 
     @Override
     public Optional<Training> save(Training training) {
@@ -61,9 +67,7 @@ public class TrainingDAOImpl implements EntityDAO<Training> {
     @Override
     public Optional<Training> findById(Long id) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
             Training training = session.find(Training.class, id);
-            session.getTransaction().commit();
             log.info("DAO: Training found by ID. Training: {}", training);
             return Optional.ofNullable(training);
         } catch (HibernateException e) {
@@ -75,9 +79,7 @@ public class TrainingDAOImpl implements EntityDAO<Training> {
     @Override
     public List<Optional<Training>> findAll() {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
             List<Optional<Training>> trainings = session.createQuery("from Training ").getResultList();
-            session.getTransaction().commit();
             log.info("DAO: Trainings found. Trainings: {}", trainings);
             return trainings;
         } catch (HibernateException e) {
@@ -121,15 +123,13 @@ public class TrainingDAOImpl implements EntityDAO<Training> {
         }
     }
 
+
     public List<Optional<Training>> findByTrainee(Long traineeId) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
-
             List<Optional<Training>> trainings = session.createQuery("SELECT t FROM Training t WHERE t.trainee.id=:traineeId", Training.class)
                     .setParameter("traineeId", traineeId)
                     .getResultList().stream().map(Optional::ofNullable).collect(Collectors.toList());
 
-            session.getTransaction().commit();
             log.info("DAO: Trainings found by trainee id: {}. Trainings: {}", traineeId, trainings);
             return trainings;
 
@@ -141,7 +141,6 @@ public class TrainingDAOImpl implements EntityDAO<Training> {
 
     public List<Optional<Training>> findByTraineeAndCriteria(Trainee trainee, Date dateFrom, Date dateTo, TrainingType trainingType) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
 
             CriteriaBuilder cb = sessionFactory.getCriteriaBuilder();
             CriteriaQuery<Training> cq = cb.createQuery(Training.class);
@@ -149,7 +148,6 @@ public class TrainingDAOImpl implements EntityDAO<Training> {
             cq.select(t).where(cb.equal(t.get("trainee"), trainee), cb.between(t.get("trainingDate"), dateFrom, dateTo), cb.equal(t.get("trainingType"), trainingType));
             List<Optional<Training>> trainings = session.createQuery(cq).getResultList().stream().map(Optional::ofNullable).collect(Collectors.toList());
 
-            session.getTransaction().commit();
             log.info("DAO: Trainings found by trainee and criteria: trainee: {}, dateFrom: {}, dateTo: {}, trainingType: {}. Trainings: {}", trainee, dateFrom, dateTo, trainingType, trainings);
             return trainings;
 
@@ -161,7 +159,6 @@ public class TrainingDAOImpl implements EntityDAO<Training> {
 
     public List<Optional<Training>> findByTrainerAndCriteria(Trainer trainer, Date dateFrom, Date dateTo, TrainingType trainingType) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
 
             CriteriaBuilder cb = sessionFactory.getCriteriaBuilder();
             CriteriaQuery<Training> cq = cb.createQuery(Training.class);
@@ -169,7 +166,6 @@ public class TrainingDAOImpl implements EntityDAO<Training> {
             cq.select(t).where(cb.equal(t.get("trainer"), trainer), cb.between(t.get("trainingDate"), dateFrom, dateTo), cb.equal(t.get("trainingType"), trainingType));
             List<Optional<Training>> trainings = session.createQuery(cq).getResultList().stream().map(Optional::ofNullable).collect(Collectors.toList());
 
-            session.getTransaction().commit();
             log.info("DAO: Trainings found by trainer and criteria: trainer: {}, dateFrom: {}, dateTo: {}, trainingType: {}. Trainings: {}", trainer, dateFrom, dateTo, trainingType, trainings);
             return trainings;
 
@@ -181,13 +177,11 @@ public class TrainingDAOImpl implements EntityDAO<Training> {
 
     public List<Optional<Trainer>> findTrainersByTrainee(Long traineeId) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
 
             List<Optional<Trainer>> trainers = session.createQuery("SELECT t.trainer FROM Training t WHERE t.trainee.id=:traineeId", Trainer.class)
                     .setParameter("traineeId", traineeId)
                     .getResultList().stream().map(Optional::ofNullable).collect(Collectors.toList());
 
-            session.getTransaction().commit();
             log.info("DAO: Trainers found by trainee id: {}. Trainers: {}", traineeId, trainers);
             return trainers;
 

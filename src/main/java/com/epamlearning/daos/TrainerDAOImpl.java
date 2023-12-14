@@ -7,6 +7,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,8 +18,15 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TrainerDAOImpl implements EntityDAO<Trainer> {
 
-    @Autowired
     private SessionFactory sessionFactory;
+
+    @Value("${findNotAssignedActiveTrainers}")
+    private String findNotAssignedActiveTrainersQuery;
+
+    @Autowired
+    public TrainerDAOImpl(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
 
     @Override
     public Optional<Trainer> save(Trainer trainer) {
@@ -51,10 +59,8 @@ public class TrainerDAOImpl implements EntityDAO<Trainer> {
     @Override
     public Optional<Trainer> findById(Long id) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
 
             Trainer trainer = session.find(Trainer.class, id);
-            session.getTransaction().commit();
             log.info("DAO: Trainer found by id: {}. Trainer: {}", id, trainer);
             return Optional.ofNullable(trainer);
 
@@ -67,9 +73,7 @@ public class TrainerDAOImpl implements EntityDAO<Trainer> {
     @Override
     public List<Optional<Trainer>> findAll() {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
             List<Optional<Trainer>> trainers = session.createQuery("from Trainer").getResultList();
-            session.getTransaction().commit();
             log.info("DAO: Trainers found. Trainers: {}", trainers);
             return trainers;
         } catch (HibernateException e) {
@@ -109,19 +113,15 @@ public class TrainerDAOImpl implements EntityDAO<Trainer> {
 
     public List<Optional<Trainer>> findNotAssignedActiveTrainers(Trainee trainee) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
 
             List<Optional<Trainer>> notAssignedActiveTrainers = session.createQuery(
-                            "SELECT t FROM Trainer t " +
-                                    "WHERE t NOT IN (SELECT tr.trainer FROM Training tr WHERE tr.trainee = :trainee) " +
-                                    "AND t.user.isActive = true", Trainer.class)
-                    .setParameter("trainee", trainee)
+                            findNotAssignedActiveTrainersQuery, Trainer.class)
+                    .setParameter(1, trainee)
                     .getResultList()
                     .stream()
                     .map(Optional::ofNullable)
                     .collect(Collectors.toList());
 
-            session.getTransaction().commit();
             log.info("DAO: Not assigned active trainers found for Trainee: {}. Trainers: {}", trainee, notAssignedActiveTrainers);
             return notAssignedActiveTrainers;
         } catch (HibernateException e) {

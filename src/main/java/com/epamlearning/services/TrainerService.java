@@ -5,13 +5,16 @@ import com.epamlearning.exceptions.NotAuthenticated;
 import com.epamlearning.exceptions.NotFoundException;
 import com.epamlearning.models.Trainee;
 import com.epamlearning.models.Trainer;
+import com.epamlearning.models.TrainingType;
+import com.epamlearning.models.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+
+// TODO: change setter injection to constructor injection for whole projects
 
 @Service
 @Slf4j
@@ -21,13 +24,9 @@ public class TrainerService implements EntityService<Trainer> {
     private UserService userService;
 
     @Autowired
-    public void setUserService(UserService userService) {
-        this.userService = userService;
-    }
-
-    @Autowired
-    public void setTrainerDAO(TrainerDAOImpl trainerDAO) {
+    public TrainerService(TrainerDAOImpl trainerDAO, UserService userService) {
         this.trainerDAO = trainerDAO;
+        this.userService = userService;
     }
 
     @Override
@@ -118,6 +117,23 @@ public class TrainerService implements EntityService<Trainer> {
 
     public List<Optional<Trainer>> findNotAssignedActiveTrainers(Trainee trainee) {
         return trainerDAO.findNotAssignedActiveTrainers(trainee);
+    }
+
+    public Trainer createTrainer(User user, TrainingType trainingType) {
+
+        if(user == null) {
+            log.warn("User is null.");
+            throw new NullPointerException("User is null.");
+        }
+        if(trainingType == null) {
+            log.warn("TrainingType is null.");
+            throw new NullPointerException("TrainingType is null.");
+        }
+
+        Trainer trainer = new Trainer();
+        trainer.setUser(user);
+        trainer.setSpecialization(trainingType);
+        return trainer;
     }
 
 }

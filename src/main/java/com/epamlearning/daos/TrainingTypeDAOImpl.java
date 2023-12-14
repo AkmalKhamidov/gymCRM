@@ -10,13 +10,18 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class TrainingTypeDAOImpl implements EntityDAO<TrainingType>{
+public class TrainingTypeDAOImpl implements EntityDAO<TrainingType> {
+
+    private SessionFactory sessionFactory;
 
     @Autowired
-    private SessionFactory sessionFactory;
+    public TrainingTypeDAOImpl(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
 
     @Override
     public Optional<TrainingType> save(TrainingType trainingType) {
@@ -31,9 +36,7 @@ public class TrainingTypeDAOImpl implements EntityDAO<TrainingType>{
     @Override
     public Optional<TrainingType> findById(Long id) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
             TrainingType trainingType = session.find(TrainingType.class, id);
-            session.getTransaction().commit();
             log.info("DAO: TrainingType found. TrainingType: {}", trainingType);
             return Optional.ofNullable(trainingType);
         } catch (HibernateException e) {
@@ -45,9 +48,11 @@ public class TrainingTypeDAOImpl implements EntityDAO<TrainingType>{
     @Override
     public List<Optional<TrainingType>> findAll() {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
-            List<Optional<TrainingType>> trainees = session.createQuery("from TrainingType").getResultList();
-            session.getTransaction().commit();
+            List<Optional<TrainingType>> trainees = session.createQuery("from TrainingType", TrainingType.class)
+                    .getResultList()
+                    .stream()
+                    .map(Optional::ofNullable)
+                    .collect(Collectors.toList());
             log.info("DAO: TrainingTypes found. TrainingTypes: {}", trainees);
             return trainees;
         } catch (HibernateException e) {

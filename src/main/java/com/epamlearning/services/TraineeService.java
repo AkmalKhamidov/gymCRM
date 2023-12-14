@@ -1,14 +1,19 @@
 package com.epamlearning.services;
 
 import com.epamlearning.daos.TraineeDAOImpl;
+import com.epamlearning.daos.TrainingDAOImpl;
 import com.epamlearning.exceptions.NotAuthenticated;
 import com.epamlearning.exceptions.NotFoundException;
 import com.epamlearning.models.Trainee;
 import com.epamlearning.models.Trainer;
+import com.epamlearning.models.Training;
+import com.epamlearning.models.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,24 +24,18 @@ public class TraineeService implements EntityService<Trainee> {
 
     private TraineeDAOImpl traineeDAO;
 
+    private TrainingDAOImpl trainingDAO;
     private UserService userService;
 
     @Autowired
-    public void setUserService(UserService userService) {
+    public TraineeService(TraineeDAOImpl traineeDAO, TrainingDAOImpl trainingDAO, UserService userService) {
+        this.traineeDAO = traineeDAO;
+        this.trainingDAO = trainingDAO;
         this.userService = userService;
     }
 
-    @Autowired
-    public void setTraineeDAO(TraineeDAOImpl traineeDAO) {
-        this.traineeDAO = traineeDAO;
-    }
-
-
-//    @Transactional
     @Override
     public Optional<Trainee> save(Trainee trainee) {
-//        throw new RuntimeException("JUST EXCEPTION");
-
         return traineeDAO.save(trainee);
     }
 
@@ -126,7 +125,6 @@ public class TraineeService implements EntityService<Trainee> {
 
         if (traineeOptional.isPresent()) {
             Trainee trainee = traineeOptional.get();
-//            trainee.setTrainers(trainers);
 
             // Save the updated trainee
             return save(trainee);
@@ -135,6 +133,61 @@ public class TraineeService implements EntityService<Trainee> {
             log.warn("Trainee with ID: {} not found for updating trainers list.", traineeId);
             throw new NotFoundException("Trainee with ID " + traineeId + " not found for updating trainers list.");
         }
+    }
+
+
+    public Trainee createTrainee(User user, String address, Date dateOfBirth) {
+
+        if(user == null){
+            log.warn("User is null.");
+            throw new NullPointerException("User is null.");
+        }
+        if(address == null || address.isEmpty()){
+            log.warn("Address is null.");
+            throw new NullPointerException("Address is null.");
+        }
+        if(dateOfBirth == null){
+            log.warn("Date of birth is null.");
+            throw new NullPointerException("Date of birth is null.");
+        }
+
+        Trainee trainee = new Trainee();
+        trainee.setAddress(address);
+        trainee.setDateOfBirth(dateOfBirth);
+        trainee.setUser(user);
+        return trainee;
+    }
+
+    public Optional<Trainee> updateTrainers(Long traineeId, List<Trainer> trainers) {
+//        if(trainers.isEmpty()) {
+//            log.warn("Trainers list is empty.");
+//            throw new NullPointerException("Trainers list is empty.");
+//        }
+
+        Optional<Trainee> traineeOptional = findById(traineeId);
+
+        if (traineeOptional.isPresent()) {
+            Trainee trainee = traineeOptional.get();
+            trainers = new ArrayList<>(trainers);
+            trainee.setTrainers(trainers);
+
+            List<Training> trainings = trainingDAO.findByTrainee(traineeId).stream().flatMap(Optional::stream).toList();
+            if(trainings.isEmpty() || trainings.contains(null)){
+                log.warn("Trainings not found for trainee with ID: {}", traineeId);
+                throw new NotFoundException("Trainings not found for trainee with ID: " + traineeId);
+            }
+            // Save the updated trainee
+            return traineeDAO.updateTrainers(traineeId,  trainings, trainers);
+        } else {
+            // Handle the case where the trainee is not found
+            log.warn("Trainee with ID: {} not found for updating trainers list.", traineeId);
+            throw new NotFoundException("Trainee with ID " + traineeId + " not found for updating trainers list.");
+        }
+    }
+
+
+    public List<Optional<Trainer>> findTrainersByTraineeId(Long id) {
+        return traineeDAO.findTrainersByTraineeId(id);
     }
 
 }

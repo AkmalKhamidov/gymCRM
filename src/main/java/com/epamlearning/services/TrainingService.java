@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+
 @Service
 @Slf4j
 public class TrainingService implements EntityService<Training> {
@@ -21,7 +22,7 @@ public class TrainingService implements EntityService<Training> {
     private TrainingDAOImpl trainingDAO;
 
     @Autowired
-    public void setTrainingDAO(TrainingDAOImpl trainingDAO) {
+    public TrainingService(TrainingDAOImpl trainingDAO) {
         this.trainingDAO = trainingDAO;
     }
 
@@ -87,8 +88,12 @@ public class TrainingService implements EntityService<Training> {
     public List<Optional<Training>> findByTrainerAndCriteria(Trainer trainer, Date dateFrom, Date dateTo, TrainingType trainingType) {
         return trainingDAO.findByTrainerAndCriteria(trainer, dateFrom, dateTo, trainingType);
     }
-
+    // TODO: rewrite by using getter/setter update
+    // 1. if the same or not
+    // 2. if not we update them
     public List<Optional<Trainer>> updateTraineeTrainers(Long traineeId, List<Trainer> trainers) {
+        // Step 1: get Trainee by traineeId
+        // Step 2: compare old list of trainers with new list
         List<Optional<Training>> traineeTrainings = trainingDAO.findByTrainee(traineeId);
         if(traineeTrainings.size() == trainers.size()) {
             for(int i = 0; i < traineeTrainings.size(); i++) {

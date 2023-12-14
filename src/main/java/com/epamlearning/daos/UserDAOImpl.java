@@ -18,7 +18,7 @@ public class UserDAOImpl implements EntityDAO<User> {
     private SessionFactory sessionFactory;
 
     @Autowired
-    public void setSessionFactory(SessionFactory sessionFactory) {
+    public UserDAOImpl(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
 
@@ -56,9 +56,7 @@ public class UserDAOImpl implements EntityDAO<User> {
     @Override
     public Optional<User> findById(Long id) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
             User user = session.find(User.class, id);
-            session.getTransaction().commit();
             log.info("DAO: User found. User: {}", user);
             return Optional.of(user);
         } catch (HibernateException e) {
@@ -70,9 +68,7 @@ public class UserDAOImpl implements EntityDAO<User> {
     @Override
     public List<Optional<User>> findAll() {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
             List<Optional<User>> users = session.createQuery("from User").getResultList();
-            session.getTransaction().commit();
             log.info("DAO: Users found. Users: {}", users);
             return users;
         } catch (HibernateException e) {

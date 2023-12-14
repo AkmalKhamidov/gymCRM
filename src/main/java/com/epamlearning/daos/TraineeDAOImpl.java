@@ -2,6 +2,7 @@ package com.epamlearning.daos;
 
 import com.epamlearning.models.Trainee;
 import com.epamlearning.models.Trainer;
+import com.epamlearning.models.Training;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
@@ -9,15 +10,23 @@ import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+// TODO: remove transaction for read (select)
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class TraineeDAOImpl implements EntityDAO<Trainee> {
 
-    @Autowired
     private SessionFactory sessionFactory;
+
+    @Autowired
+    public TraineeDAOImpl(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
 
     @Override
     public Optional<Trainee> save(Trainee trainee) {
@@ -51,9 +60,7 @@ public class TraineeDAOImpl implements EntityDAO<Trainee> {
     @Override
     public Optional<Trainee> findById(Long id) {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
             Trainee trainee = session.find(Trainee.class, id);
-            session.getTransaction().commit();
             log.info("DAO: Trainee found. Trainee: {}", trainee);
             return Optional.ofNullable(trainee);
         } catch (HibernateException e) {
@@ -65,9 +72,7 @@ public class TraineeDAOImpl implements EntityDAO<Trainee> {
     @Override
     public List<Optional<Trainee>> findAll() {
         try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
-            List<Optional<Trainee>> trainees = session.createQuery("from Trainee ").getResultList();
-            session.getTransaction().commit();
+            List<Optional<Trainee>> trainees = session.createQuery("from Trainee t").getResultList();
             log.info("DAO: Trainees found. Trainees: {}", trainees);
             return trainees;
         } catch (HibernateException e) {
@@ -76,11 +81,23 @@ public class TraineeDAOImpl implements EntityDAO<Trainee> {
         }
     }
 
+    public List<Optional<Trainer>> findTrainersByTraineeId(Long id) {
+        try (Session session = sessionFactory.openSession()) {
+            List<Optional<Trainer>> trainers = session.createQuery("SELECT t.trainers FROM Trainee t WHERE t.id=:value", Trainer.class)
+                    .setParameter("value", id)
+                    .getResultList().stream().map(Optional::ofNullable).collect(Collectors.toList());
+            log.info("DAO: Trainers found. Trainers: {}", trainers);
+            return trainers;
+        } catch (HibernateException e) {
+            log.warn("DAO: Error finding all trainers. Error: {}", e.getMessage());
+            throw new RuntimeException("Error finding all Trainers", e);
+        }
+    }
+
     @Override
     public void deleteById(Long id) {
         try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
-
             Trainee traineeToDelete = session.find(Trainee.class, id);
             session.remove(traineeToDelete);
             session.getTransaction().commit();
@@ -107,9 +124,33 @@ public class TraineeDAOImpl implements EntityDAO<Trainee> {
         }
     }
 
+    public Optional<Trainee> updateTrainers(Long traineeId, List<Training> trainings, List<Trainer> trainers) {
+        try (Session session = sessionFactory.openSession()) {
+            session.beginTransaction();
 
-    //    @Override
-//    public Optional<Trainee> findByProperty(String property, Object o) {
-//        return Optional.empty();
-//    }
+            Trainee trainee = session.find(Trainee.class, traineeId);
+
+            // Update trainerId for each associated training
+            for (Training training : trainings) {
+                // Assuming trainers list is not empty and you want to update the first trainer
+                if (!trainers.isEmpty()) {
+                    training.setTrainer(trainers.get(0));
+                } else {
+                    // Handle the case where trainers list is empty, you may want to set it to null or another default value
+                    training.setTrainer(null); // Set it to null for example
+                }
+                session.merge(training);
+            }
+
+            trainee.setTrainers(trainers);
+            session.merge(trainee);
+            session.getTransaction().commit();
+            log.info("DAO: Trainee updated. Trainee: {}", trainee);
+            return Optional.ofNullable(trainee);
+        } catch (HibernateException e) {
+            log.warn("Error updating Trainee ID: {}. Error: {}", traineeId, e.getMessage());
+            throw new RuntimeException("Error updating Trainee ID: {}" + traineeId, e);
+        }
+    }
+
 }

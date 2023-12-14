@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+// TODO: validations for all methods
+
 @Service
 @Slf4j
 public class UserService implements EntityService<User>{
@@ -19,7 +21,7 @@ public class UserService implements EntityService<User>{
     private UserDAOImpl userDAO;
 
     @Autowired
-    public void setTraineeDAO(UserDAOImpl userDAO) {
+    public UserService(UserDAOImpl userDAO) {
         this.userDAO = userDAO;
     }
 
@@ -92,14 +94,23 @@ public class UserService implements EntityService<User>{
         return user;
     }
 
-    public boolean authenticate(String username, String password) {
+    public Long authenticate(String username, String password) {
+        if(username == null || username.isEmpty()){
+            log.warn("Username is null.");
+            throw new NullPointerException("Username is null.");
+        }
+        if(password == null || password.isEmpty()){
+            log.warn("Password is null.");
+            throw new NullPointerException("Password is null.");
+        }
+
         Optional<User> user = userDAO.findByUserName(username);
         if(user.isEmpty()){
             log.warn("User with username: {} not found.", username);
             throw new NotFoundException("User with username " + username + " not found.");
         }
         if(user.get().getPassword().equals(password)){
-            return true;
+            return user.get().getId();
         } else {
             log.warn("Wrong password. Username: {} ",username);
             throw new NotAuthenticated("Wrong password. Username: " + username);
@@ -107,6 +118,16 @@ public class UserService implements EntityService<User>{
     }
 
     public User createUser(String firstName, String lastName) {
+
+        if(firstName == null || firstName.isEmpty()){
+            log.warn("First name is null.");
+            throw new NullPointerException("First name is null.");
+        }
+        if(lastName == null || lastName.isEmpty()) {
+            log.warn("Last name is null.");
+            throw new NullPointerException("Last name is null.");
+        }
+
         User user = new User();
         user.setFirstName(firstName);
         user.setLastName(lastName);
@@ -138,7 +159,6 @@ public class UserService implements EntityService<User>{
             int index = random.nextInt(characters.length());
             password.append(characters.charAt(index));
         }
-//        log.info("User's password generated: {}", password);
         return password.toString();
     }
 

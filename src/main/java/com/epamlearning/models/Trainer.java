@@ -5,6 +5,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CascadeType;
+
+import java.util.ArrayList;
+import java.util.List;
+
+// TODO: create attribute list<trainees>
+
 
 @Entity
 @Table(name = "trainers")
@@ -20,13 +27,15 @@ public class Trainer {
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
-    @Cascade({org.hibernate.annotations.CascadeType.SAVE_UPDATE, org.hibernate.annotations.CascadeType.DELETE,
-            org.hibernate.annotations.CascadeType.MERGE, org.hibernate.annotations.CascadeType.PERSIST})
+    @Cascade({CascadeType.REMOVE, CascadeType.MERGE, CascadeType.PERSIST})
     private User user;
 
     @ManyToOne
     @JoinColumn(name="specialization", referencedColumnName = "id")
     private TrainingType specialization;
+
+    @ManyToMany(mappedBy = "trainers")
+    private List<Trainee> traineeList = new ArrayList<>();
 
     @Override
     public String toString() {
