@@ -14,45 +14,75 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
-// TODO: change setter injection to constructor injection for whole projects
-
 @Service
 @Slf4j
 public class TrainerService implements EntityService<Trainer> {
 
-    private TrainerDAOImpl trainerDAO;
-    private UserService userService;
+    private final TrainerDAOImpl trainerDAO;
+    private final TraineeService traineeService;
+    private final UserService userService;
 
     @Autowired
-    public TrainerService(TrainerDAOImpl trainerDAO, UserService userService) {
+    public TrainerService(TrainerDAOImpl trainerDAO, TraineeService traineeService, UserService userService) {
         this.trainerDAO = trainerDAO;
+        this.traineeService = traineeService;
         this.userService = userService;
     }
 
     @Override
-    public Optional<Trainer> save(Trainer trainer) {
-        return trainerDAO.save(trainer);
-    }
-
-    @Override
-    public Optional<Trainer> update(Long id, Trainer trainer) {
-        Optional<Trainer> trainerUpdated = trainerDAO.update(id, trainer);
-        if (trainerUpdated.isEmpty()) {
-            log.warn("Trainer with ID: {} not found for update.", id);
-            throw new NotFoundException("Trainer with ID " + id + " not found for update.");
-        }
-        return trainerUpdated;
-    }
-
-    @Override
     public Optional<Trainer> findById(Long id) {
+        if (id == null) {
+            log.warn("ID is null.");
+            throw new NullPointerException("ID is null.");
+        }
+
         Optional<Trainer> trainer = trainerDAO.findById(id);
-        if(trainer.isEmpty()) {
+        if (trainer.isEmpty()) {
             log.warn("Trainer with ID: {} not found.", id);
             throw new NotFoundException("Trainer with ID " + id + " not found.");
         }
         return trainer;
     }
+
+    @Override
+    public Optional<Trainer> findByUsername(String username) {
+        if (username == null || username.isEmpty()) {
+            log.warn("Username is null.");
+            throw new NullPointerException("Username is null.");
+        }
+
+        Optional<Trainer> trainer = trainerDAO.findByUserName(username);
+        if (trainer.isEmpty()) {
+            log.warn("Trainer with username: {} not found.", username);
+            throw new NotFoundException("Trainer with username " + username + " not found.");
+        }
+        return trainer;
+    }
+
+    @Override
+    public Optional<Trainer> save(Trainer trainer) {
+        return trainerDAO.saveOrUpdate(trainer);
+    }
+
+    @Override
+    public Optional<Trainer> update(Long id, Trainer trainer) {
+
+        if (trainer == null) {
+            log.warn("Trainer is null.");
+            throw new NullPointerException("Trainer is null.");
+        }
+        if (trainer.getSpecialization() == null) {
+            log.warn("TrainingType is null.");
+            throw new NullPointerException("TrainingType is null.");
+        }
+        userService.userNullVerification(trainer.getUser());
+
+        Trainer trainerToUpdate = findById(id).get();
+        trainerToUpdate.setUser(trainer.getUser());
+        trainerToUpdate.setSpecialization(trainer.getSpecialization());
+        return trainerDAO.saveOrUpdate(trainerToUpdate);
+    }
+
 
     @Override
     public List<Optional<Trainer>> findAll() {
@@ -61,73 +91,51 @@ public class TrainerService implements EntityService<Trainer> {
 
     @Override
     public void deleteById(Long id) {
-        Optional<Trainer> trainer = trainerDAO.findById(id);
-        if(trainer.isEmpty()){
-            log.warn("Trainer with ID: {} not found for delete.", id);
-            throw new NotFoundException("Trainer with ID " + id + " not found for delete.");
-        } else {
-            trainerDAO.deleteById(id);
-        }
+        trainerDAO.delete(findById(id).get());
     }
 
-    @Override
-    public Optional<Trainer> findByUsername(String username) {
-        Optional<Trainer> trainer = trainerDAO.findByUserName(username);
-        if(trainer.isEmpty()){
-            log.warn("Trainer with username: {} not found.", username);
-            throw new NotFoundException("Trainer with username " + username + " not found.");
-        }
-        return trainer;
-    }
+    public Long authenticate(String username, String password) {
 
-    public boolean authenticate(String username, String password) {
-        Optional<Trainer> trainer = trainerDAO.findByUserName(username);
-        if(trainer.isEmpty()){
-            log.warn("Trainer with username: {} not found.", username);
-            throw new NotFoundException("Trainer with username " + username + " not found.");
+        if (password == null || password.isEmpty()) {
+            log.warn("Password is null.");
+            throw new NullPointerException("Password is null.");
         }
-        if(trainer.get().getUser().getPassword().equals(password)){
-            return true;
+        Trainer trainer = findByUsername(username).get();
+        if (trainer.getUser().getPassword().equals(password)) {
+            return trainer.getId();
         } else {
-            log.warn("Wrong password. Username: {} ",username);
+            log.warn("Wrong password. Username: {} ", username);
             throw new NotAuthenticated("Wrong password. Username: " + username);
         }
     }
 
     public Optional<Trainer> updateActive(Long id, boolean active) {
-        Optional<Trainer> trainerUpdated = trainerDAO.findById(id);
-        if (trainerUpdated.isEmpty()) {
-            log.warn("Trainee with ID: {} not found for active update.", id);
-            throw new NotFoundException("Trainee with ID " + id + " not found for update.");
-        }
-        trainerUpdated.get().setUser(userService.updateActive(trainerUpdated.get().getUser().getId(), active).get());
-        return trainerUpdated;
+        Trainer trainerUpdated = findById(id).get();
+        trainerUpdated.getUser().setActive(active);
+        return trainerDAO.saveOrUpdate(trainerUpdated);
     }
 
     public Optional<Trainer> updatePassword(Long id, String password) {
-        Optional<Trainer> trainerUpdated = trainerDAO.findById(id);
-        if (trainerUpdated.isEmpty()) {
-            log.warn("Trainee with ID: {} not found for password update.", id);
-            throw new NotFoundException("Trainee with ID " + id + " not found for update.");
+        if (password == null || password.isEmpty()) {
+            log.warn("Password is null.");
+            throw new NullPointerException("Password is null.");
         }
-        trainerUpdated.get().setUser(userService.updatePassword(trainerUpdated.get().getUser().getId(), password).get());
-        log.info("Trainer updated: {}", trainerUpdated);
-        return trainerUpdated;
+
+        Trainer trainerUpdated = findById(id).get();
+
+        trainerUpdated.getUser().setPassword(password);
+        return trainerDAO.saveOrUpdate(trainerUpdated);
     }
 
-    public List<Optional<Trainer>> findNotAssignedActiveTrainers(Trainee trainee) {
-        return trainerDAO.findNotAssignedActiveTrainers(trainee);
+    public List<Optional<Trainer>> findNotAssignedActiveTrainers(Long traineeId) {
+        return trainerDAO.findNotAssignedActiveTrainers(traineeService.findById(traineeId).get());
     }
 
     public Trainer createTrainer(User user, TrainingType trainingType) {
 
-        if(user == null) {
+        if (user == null) {
             log.warn("User is null.");
             throw new NullPointerException("User is null.");
-        }
-        if(trainingType == null) {
-            log.warn("TrainingType is null.");
-            throw new NullPointerException("TrainingType is null.");
         }
 
         Trainer trainer = new Trainer();
@@ -136,4 +144,7 @@ public class TrainerService implements EntityService<Trainer> {
         return trainer;
     }
 
+    public List<Optional<Trainee>> findTraineesByTrainerId(Long id) {
+        return trainerDAO.findTraineesByTrainer(findById(id).get());
+    }
 }

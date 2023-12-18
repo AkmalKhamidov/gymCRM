@@ -13,7 +13,10 @@ import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 @Component
@@ -24,18 +27,21 @@ public class SignUpFacade implements Facade{
     private final TrainingTypeService trainingTypeService;
     private final UserService userService;
 
-    Scanner sc = new Scanner(System.in);
+    private final LogInFacade logInFacade;
 
     @Autowired
-    public SignUpFacade(TraineeService traineeService, TrainerService trainerService, TrainingTypeService trainingTypeService, UserService userService) {
+    public SignUpFacade(TraineeService traineeService, TrainerService trainerService, TrainingTypeService trainingTypeService, UserService userService, LogInFacade logInFacade) {
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingTypeService = trainingTypeService;
         this.userService = userService;
+        this.logInFacade = logInFacade;
     }
 
     @Override
-    public void getPage() {
+    public void getPage(String response) {
+        cleanScreen();
+
         System.out.println("Welcome to Gym CRM");
         System.out.println("Sign Up as Trainee or Trainer");
         System.out.println("1. Trainee");
@@ -44,78 +50,91 @@ public class SignUpFacade implements Facade{
 
         System.out.print("Input your choice: ");
 
-        String firstName;
-        String lastName;
         int choice = sc.nextInt();
         sc.nextLine();
         switch (choice) {
             case 1 -> {
-                System.out.print("Enter your first name: ");
-                firstName = sc.nextLine();
-                System.out.print("Enter your last name: ");
-                lastName = sc.nextLine();
-                System.out.print("Enter your address: ");
-                String address = sc.nextLine();
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                Date dateOfBirth = null;
-                do {
-                    System.out.print("Enter your date of birth (dd/mm/yyyy): ");
-                    String dateStr = sc.next();
-                    try {
-                        if(sdf.parse(dateStr).after(new Calendar.Builder().setDate(1900, Calendar.JANUARY, 1).build().getTime())
-                                && sdf.parse(dateStr).before(new Date())){
-                            dateOfBirth = sdf.parse(dateStr);
-                        } else {
-                            System.out.println("Invalid date. Please try again.");
-                        }
-                        System.out.println(sdf.parse(dateStr));
-                    } catch (ParseException e) {
-                        System.out.println("Invalid date format. Please try again.");
-                    }
-                } while (dateOfBirth == null);
-                try{
-                    createTrainee(firstName, lastName, address, dateOfBirth);
-                } catch (Exception e) {
-                    System.out.println("Error creating trainee. Error: " + e.getMessage());
-                    getPage();
-                }
+                traineeSignUp();
             }
             case 2 -> {
-                System.out.print("Enter your first name: ");
-                firstName = sc.nextLine();
-                System.out.print("Enter your last name: ");
-                lastName = sc.nextLine();
-                System.out.print("List of training types: ");
-                List<TrainingType> trainingTypeList = trainingTypeService.findAll()
-                        .stream()
-                        .flatMap(Optional::stream)
-                        .toList();
-
-                IntStream.range(0, trainingTypeList.size())
-                        .forEach(index -> {
-                            TrainingType trainingType = trainingTypeList.get(index);
-                            System.out.println("Index: " + index + ". Name: " + trainingType.getTrainingTypeName());
-                        });
-
-                Integer trainingTypeIndex;
-
-                do {
-                    System.out.print("Enter your training type index: ");
-                    trainingTypeIndex = sc.nextInt();
-                    if(trainingTypeIndex < 0 || trainingTypeIndex > trainingTypeList.size()) {
-                        System.out.println("Invalid training type index. Please try again.");
-                    }
-                } while (trainingTypeIndex == null);
-
-                try{
-                    createTrainer(firstName, lastName, trainingTypeList.get(trainingTypeIndex));
-                } catch (Exception e){
-                    System.out.println("Error creating trainer. Error: " + e.getMessage());
-                    getPage();
-                }
+                trainerSignUp();
             }
             case 3 -> System.out.println("Thank you for using Gym CRM");
             default -> System.out.println("Invalid choice");
+        }
+    }
+
+    public void traineeSignUp(){
+        String firstName;
+        String lastName;
+        String response;
+        System.out.println("Trainee Sign Up");
+        System.out.print("Enter your first name: ");
+        firstName = sc.nextLine();
+        System.out.print("Enter your last name: ");
+        lastName = sc.nextLine();
+        System.out.print("Enter your address: ");
+        String address = sc.nextLine();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        Date dateOfBirth = null;
+        do {
+            System.out.print("Enter your date of birth (dd/mm/yyyy): ");
+            String dateStr = sc.next();
+            try {
+                if(sdf.parse(dateStr).after(new Calendar.Builder().setDate(1900, Calendar.JANUARY, 1).build().getTime())
+                        && sdf.parse(dateStr).before(new Date())){
+                    dateOfBirth = sdf.parse(dateStr);
+                } else {
+                    System.out.println("Invalid date. Please try again.");
+                }
+                System.out.println(sdf.parse(dateStr));
+            } catch (ParseException e) {
+                System.out.println("Invalid date format. Please try again.");
+            }
+        } while (dateOfBirth == null);
+        try{
+            createTrainee(firstName, lastName, address, dateOfBirth);
+            logInFacade.getPage("Trainee created successfully. Please login to continue.");
+        } catch (Exception e) {
+            getPage("Error creating trainee. Error: " + e.getMessage());
+        }
+    }
+
+    public void trainerSignUp(){
+        String firstName;
+        String lastName;
+        System.out.println("Trainer Sign Up");
+        System.out.print("Enter your first name: ");
+        firstName = sc.nextLine();
+        System.out.print("Enter your last name: ");
+        lastName = sc.nextLine();
+        System.out.print("List of training types: ");
+        List<TrainingType> trainingTypeList = trainingTypeService.findAll()
+                .stream()
+                .flatMap(Optional::stream)
+                .toList();
+
+        IntStream.range(0, trainingTypeList.size())
+                .forEach(index -> {
+                    TrainingType trainingType = trainingTypeList.get(index);
+                    System.out.println("Index: " + index + ". Name: " + trainingType.getTrainingTypeName());
+                });
+
+        Integer trainingTypeIndex = -1;
+
+        do {
+            System.out.print("Enter your training type index : ");
+            trainingTypeIndex = sc.nextInt();
+            if(trainingTypeIndex < 0 || trainingTypeIndex > trainingTypeList.size()) {
+                System.out.println("Invalid training type index. Please try again.");
+            }
+        } while (trainingTypeIndex == -1);
+
+        try{
+            createTrainer(firstName, lastName, trainingTypeIndex != null ? trainingTypeList.get(trainingTypeIndex): null);
+            logInFacade.getPage("Trainer created successfully. Please login to continue.");
+        } catch (Exception e){
+            getPage("Error creating trainer. Error: " + e.getMessage());
         }
     }
 

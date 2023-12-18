@@ -12,16 +12,19 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class TrainerDAOImpl implements EntityDAO<Trainer> {
 
-    private SessionFactory sessionFactory;
+    private final SessionFactory sessionFactory;
 
-    @Value("${findNotAssignedActiveTrainers}")
-    private String findNotAssignedActiveTrainersQuery;
+    @Value("${FIND_NOT_ASSIGNED_ACTIVE_TRAINERS}")
+    private String FIND_NOT_ASSIGNED_ACTIVE_TRAINERS;
+    @Value("${FIND_ALL_TRAINERS_QUERY}")
+    private String FIND_ALL_TRAINERS_QUERY;
+    @Value("${FIND_TRAINER_BY_USERNAME_QUERY}")
+    private String FIND_TRAINER_BY_USERNAME_QUERY;
 
     @Autowired
     public TrainerDAOImpl(SessionFactory sessionFactory) {
@@ -29,30 +32,13 @@ public class TrainerDAOImpl implements EntityDAO<Trainer> {
     }
 
     @Override
-    public Optional<Trainer> save(Trainer trainer) {
+    public Optional<Trainer> saveOrUpdate(Trainer trainer) {
         try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
-            session.merge(trainer); // session.save() is deprecated
+            session.merge(trainer);
             session.getTransaction().commit();
-            log.info("DAO: Trainer inserted: {}", trainer);
+            log.info("DAO: Trainer inserted/updated: {}", trainer);
             return Optional.ofNullable(trainer);
-        }
-    }
-
-    @Override
-    public Optional<Trainer> update(Long id, Trainer trainer) {
-        try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
-            Trainer trainerToUpdate = session.find(Trainer.class, id);
-            trainerToUpdate.setUser(trainer.getUser());
-            trainerToUpdate.setSpecialization(trainer.getSpecialization());
-                session.merge(trainerToUpdate);
-            session.getTransaction().commit();
-            log.info("DAO: Trainer updated: {}", trainer);
-            return Optional.ofNullable(trainerToUpdate);
-        } catch (HibernateException e) {
-            log.warn("DAO: Error updating Trainer with ID: {}. Error: {}", id, e.getMessage());
-            throw new RuntimeException("Error updating Trainer with ID " + id, e);
         }
     }
 
@@ -73,7 +59,11 @@ public class TrainerDAOImpl implements EntityDAO<Trainer> {
     @Override
     public List<Optional<Trainer>> findAll() {
         try (Session session = sessionFactory.openSession()) {
-            List<Optional<Trainer>> trainers = session.createQuery("from Trainer").getResultList();
+            List<Optional<Trainer>> trainers = session.createQuery(FIND_ALL_TRAINERS_QUERY, Trainer.class)
+                    .getResultList()
+                    .stream()
+                    .map(Optional::ofNullable)
+                    .toList();;
             log.info("DAO: Trainers found. Trainers: {}", trainers);
             return trainers;
         } catch (HibernateException e) {
@@ -83,25 +73,23 @@ public class TrainerDAOImpl implements EntityDAO<Trainer> {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void delete(Trainer trainer) {
         try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
-
-            Trainer trainerToDelete = session.find(Trainer.class, id);
-            session.remove(trainerToDelete);
+            session.remove(trainer);
             session.getTransaction().commit();
-            log.info("DAO: Trainer deleted. Id: {}, trainer: {}", id, trainerToDelete);
+            log.info("DAO: Trainer deleted. Trainer: {}", trainer);
         } catch (HibernateException e) {
-            log.warn("DAO: Error delete Trainer with ID: {}. Error: {}", id, e.getMessage());
-            throw new RuntimeException("Error delete Trainer with ID " + id, e);
+            log.warn("DAO: Error delete Trainer: {}. Error: {}", trainer, e.getMessage());
+            throw new RuntimeException("Error delete Trainer: " + trainer, e);
         }
     }
 
     @Override
     public Optional<Trainer> findByUserName(String username) {
         try (Session session = sessionFactory.openSession()) {
-            Trainer trainer = session.createQuery("SELECT t FROM Trainer t WHERE t.user.username=:value", Trainer.class)
-                    .setParameter("value", username)
+            Trainer trainer = session.createQuery(FIND_TRAINER_BY_USERNAME_QUERY, Trainer.class)
+                    .setParameter(1, username)
                     .getSingleResultOrNull();
             log.info("DAO: Trainer found by username: {}. Trainer: {}", username, trainer);
             return Optional.ofNullable(trainer);
@@ -115,18 +103,28 @@ public class TrainerDAOImpl implements EntityDAO<Trainer> {
         try (Session session = sessionFactory.openSession()) {
 
             List<Optional<Trainer>> notAssignedActiveTrainers = session.createQuery(
-                            findNotAssignedActiveTrainersQuery, Trainer.class)
+                            FIND_NOT_ASSIGNED_ACTIVE_TRAINERS , Trainer.class)
                     .setParameter(1, trainee)
                     .getResultList()
                     .stream()
                     .map(Optional::ofNullable)
-                    .collect(Collectors.toList());
+                    .toList();
 
             log.info("DAO: Not assigned active trainers found for Trainee: {}. Trainers: {}", trainee, notAssignedActiveTrainers);
             return notAssignedActiveTrainers;
         } catch (HibernateException e) {
             log.warn("DAO: Error finding not assigned active trainers for Trainee: {}. Error: {}", trainee, e.getMessage());
             throw new RuntimeException("Error finding not assigned active trainers for Trainee: " + trainee, e);
+        }
+    }
+
+    public List<Optional<Trainee>> findTraineesByTrainer(Trainer trainer) {
+        try (Session session = sessionFactory.openSession()) {
+            session.refresh(trainer);
+            return trainer.getTrainees().stream().map(Optional::ofNullable).toList();
+        } catch (HibernateException e) {
+            log.warn("DAO: Error finding all trainer's trainees. Error: {}", e.getMessage());
+            throw new RuntimeException("Error finding all trainer's trainees", e);
         }
     }
 }

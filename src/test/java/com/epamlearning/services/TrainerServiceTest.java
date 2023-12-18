@@ -5,6 +5,7 @@ import com.epamlearning.exceptions.NotAuthenticated;
 import com.epamlearning.exceptions.NotFoundException;
 import com.epamlearning.models.Trainee;
 import com.epamlearning.models.Trainer;
+import com.epamlearning.models.TrainingType;
 import com.epamlearning.models.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 public class TrainerServiceTest {
@@ -31,23 +33,33 @@ public class TrainerServiceTest {
     @InjectMocks
     private TrainerService trainerService;
 
+    @Mock
+    private TraineeService traineeService;
     private User user;
 
+    private Trainer trainer;
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        TrainingType trainingType = new TrainingType();
+        trainingType.setId(999L);
+        trainingType.setTrainingTypeName("TestTrainingTypeName");
         user = new User();
-        user.setId(1L);
+        user.setId(999L);
         user.setUsername("TestUsername");
         user.setFirstName("TestFirstName");
         user.setLastName("TestLastName");
+        user.setPassword("testPassword");
         user.setActive(true);
+        trainer = new Trainer();
+        trainer.setId(999L);
+        trainer.setUser(user);
+        trainer.setSpecialization(trainingType);
     }
 
     @Test
     void saveTrainer() {
-        Trainer trainer = new Trainer();
-        when(trainerDAO.save(trainer)).thenReturn(Optional.of(trainer));
+        when(trainerDAO.saveOrUpdate(trainer)).thenReturn(Optional.of(trainer));
 
         Optional<Trainer> savedTrainer = trainerService.save(trainer);
 
@@ -57,19 +69,24 @@ public class TrainerServiceTest {
 
     @Test
     void updateTrainer() {
-        long trainerId = 1L;
-        Trainer updatedTrainer = new Trainer();
-        when(trainerDAO.update(eq(trainerId), any(Trainer.class))).thenReturn(Optional.of(updatedTrainer));
+        long trainerId = 999L;
+        TrainingType trainingType = new TrainingType();
+        trainingType.setId(999L);
+        trainingType.setTrainingTypeName("NewTestTrainingTypeName");
+        trainer.getUser().setUsername("NewTestUsername");
+        trainer.setSpecialization(trainingType);
+        when(trainerDAO.findById(anyLong())).thenReturn(Optional.of(trainer));
+        when(trainerDAO.saveOrUpdate(any(Trainer.class))).thenReturn(Optional.of(trainer));
 
-        Optional<Trainer> trainer = trainerService.update(trainerId, updatedTrainer);
+        Optional<Trainer> trainerUpdated = trainerService.update(trainerId, trainer);
 
-        assertTrue(trainer.isPresent());
-        assertEquals(updatedTrainer, trainer.get());
+        assertTrue(trainerUpdated.isPresent());
+        assertEquals(trainer, trainerUpdated.get());
     }
 
     @Test
     void findTrainerById() {
-        long trainerId = 1L;
+        long trainerId = 999L;
         Trainer trainer = new Trainer();
         when(trainerDAO.findById(trainerId)).thenReturn(Optional.of(trainer));
 
@@ -91,21 +108,21 @@ public class TrainerServiceTest {
 
     @Test
     void deleteTrainerById() {
-        long trainerId = 1L;
-        when(trainerDAO.findById(trainerId)).thenReturn(Optional.of(new Trainer()));
+        long trainerId = 999L;
+        when(trainerDAO.findById(trainerId)).thenReturn(Optional.of(trainer));
 
         assertDoesNotThrow(() -> trainerService.deleteById(trainerId));
-        verify(trainerDAO, times(1)).deleteById(trainerId);
+        verify(trainerDAO, times(1)).delete(trainer);
     }
 
     @Test
     void deleteTrainerByIdNotFound() {
-        long trainerId = 1L;
+        long trainerId = 999L;
         when(trainerDAO.findById(trainerId)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> trainerService.deleteById(trainerId));
-        assertEquals("Trainer with ID " + trainerId + " not found for delete.", exception.getMessage());
-        verify(trainerDAO, never()).deleteById(anyLong());
+        assertEquals("Trainer with ID " + trainerId + " not found.", exception.getMessage());
+        verify(trainerDAO, never()).delete(trainer);
     }
 
     @Test
@@ -133,12 +150,9 @@ public class TrainerServiceTest {
     void authenticateTrainer() {
         String username = "testUser";
         String password = "testPassword";
-        Trainer trainer = new Trainer();
-        user.setPassword(password);
-        trainer.setUser(user);
         when(trainerDAO.findByUserName(username)).thenReturn(Optional.of(trainer));
 
-        assertTrue(trainerService.authenticate(username, password));
+        assertEquals(trainer.getId(), trainerService.authenticate(username, password));
     }
 
     @Test
@@ -167,45 +181,45 @@ public class TrainerServiceTest {
 
     @Test
     void updateTrainerActiveStatus() {
-        long trainerId = 1L;
-        boolean newActiveStatus = true;
-        Trainer updatedTrainer = new Trainer();
-        user.setActive(newActiveStatus);
-        updatedTrainer.setUser(user);
-        when(trainerDAO.findById(trainerId)).thenReturn(Optional.of(updatedTrainer));
-        when(userService.updateActive(anyLong(), eq(newActiveStatus))).thenReturn(Optional.of(new User()));
+        long trainerId = 999L;
+        boolean newActiveStatus = false;
+        trainer.getUser().setActive(newActiveStatus);
+        when(trainerDAO.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(trainerDAO.saveOrUpdate(any(Trainer.class))).thenReturn(Optional.of(trainer));
 
-        Optional<Trainer> trainer = trainerService.updateActive(trainerId, newActiveStatus);
+        Optional<Trainer> trainerUpdated = trainerService.updateActive(trainerId, newActiveStatus);
 
-        assertTrue(trainer.isPresent());
-        assertEquals(updatedTrainer, trainer.get());
-        verify(userService, times(1)).updateActive(anyLong(), eq(newActiveStatus));
+        assertTrue(trainerUpdated.isPresent());
+        assertEquals(trainer, trainerUpdated.get());
+        verify(trainerDAO, times(1)).saveOrUpdate(any(Trainer.class));
     }
 
     @Test
     void updateTrainerPassword() {
-        long trainerId = 1L;
+        long trainerId = 999L;
         String newPassword = "newPassword";
-        Trainer updatedTrainer = new Trainer();
-        user.setPassword(newPassword);
-        updatedTrainer.setUser(user);
-        when(trainerDAO.findById(trainerId)).thenReturn(Optional.of(updatedTrainer));
-        when(userService.updatePassword(anyLong(), eq(newPassword))).thenReturn(Optional.of(new User()));
+        trainer.getUser().setPassword(newPassword);
+        when(trainerDAO.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(trainerDAO.saveOrUpdate(any(Trainer.class))).thenReturn(Optional.of(trainer));
 
-        Optional<Trainer> trainer = trainerService.updatePassword(trainerId, newPassword);
+        Optional<Trainer> trainerUpdated = trainerService.updatePassword(trainerId, newPassword);
 
-        assertTrue(trainer.isPresent());
-        assertEquals(updatedTrainer, trainer.get());
-        verify(userService, times(1)).updatePassword(anyLong(), eq(newPassword));
+        assertTrue(trainerUpdated.isPresent());
+        assertEquals(trainer, trainerUpdated.get());
+        verify(trainerDAO, times(1)).saveOrUpdate(any(Trainer.class));
     }
 
     @Test
     void findNotAssignedActiveTrainers() {
+        Long traineeId = 999L;
         Trainee trainee = new Trainee();
-        List<Optional<Trainer>> notAssignedActiveTrainers = new ArrayList<>();
+        trainee.setId(traineeId);
+
+        List<Optional<Trainer>> notAssignedActiveTrainers = List.of(Optional.of(trainer));
+        when(traineeService.findById(traineeId)).thenReturn(Optional.of(trainee));
         when(trainerDAO.findNotAssignedActiveTrainers(trainee)).thenReturn(notAssignedActiveTrainers);
 
-        List<Optional<Trainer>> foundTrainers = trainerService.findNotAssignedActiveTrainers(trainee);
+        List<Optional<Trainer>> foundTrainers = trainerService.findNotAssignedActiveTrainers(traineeId);
 
         assertEquals(notAssignedActiveTrainers, foundTrainers);
     }

@@ -15,7 +15,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 class UserServiceTest {
@@ -26,15 +27,23 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
+    private User user;
+
     @BeforeEach
     void setUp() {
+        user = new User();
+        user.setId(999L);
+        user.setUsername("TestFirstName.TestLastName");
+        user.setFirstName("TestFirstName");
+        user.setLastName("TestLastName");
+        user.setPassword("testPassword");
+        user.setActive(true);
         MockitoAnnotations.openMocks(this);
     }
 
     @Test
     void saveUser() {
-        User user = new User();
-        when(userDAO.save(user)).thenReturn(Optional.of(user));
+        when(userDAO.saveOrUpdate(user)).thenReturn(Optional.of(user));
 
         Optional<User> savedUser = userService.save(user);
 
@@ -44,40 +53,46 @@ class UserServiceTest {
 
     @Test
     void updateUser() {
-        long userId = 1L;
-        User updatedUser = new User();
-        when(userDAO.update(eq(userId), any(User.class))).thenReturn(Optional.of(updatedUser));
+        long userId = 999L;
+        user.setUsername("NewTestFirstName.NewTestLastName");
+        user.setFirstName("NewTestFirstName");
+        user.setLastName("NewTestLastName");
+        user.setActive(true);
+        when(userDAO.findById(anyLong())).thenReturn(Optional.of(user));
+        when(userDAO.saveOrUpdate(any(User.class))).thenReturn(Optional.of(user));
 
-        Optional<User> user = userService.update(userId, updatedUser);
+        Optional<User> userUpdated = userService.update(userId, user);
 
-        assertTrue(user.isPresent());
-        assertEquals(updatedUser, user.get());
+        assertTrue(userUpdated.isPresent());
+        assertEquals(user, userUpdated.get());
     }
 
     @Test
     void updateUserPassword() {
-        long userId = 1L;
+        long userId = 999L;
         String newPassword = "newPassword";
-        User updatedUser = new User();
-        when(userDAO.updatePassword(eq(userId), eq(newPassword))).thenReturn(Optional.of(updatedUser));
+        user.setPassword(newPassword);
+        when(userDAO.findById(anyLong())).thenReturn(Optional.of(user));
+        when(userDAO.saveOrUpdate(any(User.class))).thenReturn(Optional.of(user));
 
-        Optional<User> user = userService.updatePassword(userId, newPassword);
+        Optional<User> userUpdated = userService.updatePassword(userId, newPassword);
 
-        assertTrue(user.isPresent());
-        assertEquals(updatedUser, user.get());
+        assertTrue(userUpdated.isPresent());
+        assertEquals(user, userUpdated.get());
     }
 
     @Test
     void updateActiveStatus() {
-        long userId = 1L;
-        boolean newActiveStatus = true;
-        User updatedUser = new User();
-        when(userDAO.updateActive(eq(userId), eq(newActiveStatus))).thenReturn(Optional.of(updatedUser));
+        long userId = 999L;
+        boolean newActiveStatus = false;
+        user.setActive(false);
+        when(userDAO.findById(anyLong())).thenReturn(Optional.of(user));
+        when(userDAO.saveOrUpdate(any(User.class))).thenReturn(Optional.of(user));
 
-        Optional<User> user = userService.updateActive(userId, newActiveStatus);
+        Optional<User> userUpdated = userService.updateActive(userId, newActiveStatus);
 
-        assertTrue(user.isPresent());
-        assertEquals(updatedUser, user.get());
+        assertTrue(userUpdated.isPresent());
+        assertEquals(user, userUpdated.get());
     }
 
     @Test
@@ -104,30 +119,28 @@ class UserServiceTest {
 
     @Test
     void deleteUserById() {
-        long userId = 1L;
-        when(userDAO.findById(userId)).thenReturn(Optional.of(new User()));
+        long userId = 999L;
+        when(userDAO.findById(userId)).thenReturn(Optional.of(user));
 
         assertDoesNotThrow(() -> userService.deleteById(userId));
-        verify(userDAO, times(1)).deleteById(userId);
+        verify(userDAO, times(1)).delete(any(User.class));
     }
 
     @Test
     void deleteUserByIdNotFound() {
-        long userId = 1L;
+        long userId = 999L;
         when(userDAO.findById(userId)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> userService.deleteById(userId));
         assertEquals("User with ID " + userId + " not found for delete.", exception.getMessage());
-        verify(userDAO, never()).deleteById(anyLong());
+        verify(userDAO, never()).delete(any(User.class));
     }
 
     @Test
     void findByUsername() {
-        String username = "testUser";
-        User user = new User();
-        when(userDAO.findByUserName(username)).thenReturn(Optional.of(user));
+        when(userDAO.findByUserName(user.getUsername())).thenReturn(Optional.of(user));
 
-        Optional<User> foundUser = userService.findByUsername(username);
+        Optional<User> foundUser = userService.findByUsername(user.getUsername());
 
         assertTrue(foundUser.isPresent());
         assertEquals(user, foundUser.get());
@@ -146,11 +159,10 @@ class UserServiceTest {
     void authenticateUser() {
         String username = "testUser";
         String password = "testPassword";
-        User user = new User();
-        user.setPassword(password);
         when(userDAO.findByUserName(username)).thenReturn(Optional.of(user));
 
-        assertTrue(userService.authenticate(username, password));
+        assertEquals( user.getId(), userService.authenticate(username, password));
+
     }
 
     @Test

@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "training_types")
 @NoArgsConstructor
@@ -26,5 +28,18 @@ public class TrainingType {
                 "id=" + id +
                 ", trainingTypeName='" + trainingTypeName + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TrainingType that = (TrainingType) o;
+        return Objects.equals(id, that.id) && Objects.equals(trainingTypeName, that.trainingTypeName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, trainingTypeName);
     }
 }

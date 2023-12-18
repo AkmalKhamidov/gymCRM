@@ -6,6 +6,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -15,7 +16,12 @@ import java.util.Optional;
 @Slf4j
 public class UserDAOImpl implements EntityDAO<User> {
 
-    private SessionFactory sessionFactory;
+    private final SessionFactory sessionFactory;
+
+    @Value("${FIND_ALL_USERS_QUERY}")
+    private String FIND_ALL_USERS_QUERY;
+    @Value("${FIND_USER_BY_USERNAME_QUERY}")
+    private String FIND_USER_BY_USERNAME_QUERY;
 
     @Autowired
     public UserDAOImpl(SessionFactory sessionFactory) {
@@ -23,33 +29,13 @@ public class UserDAOImpl implements EntityDAO<User> {
     }
 
     @Override
-    public Optional<User> save(User user) {
+    public Optional<User> saveOrUpdate(User user) {
         try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
-            session.merge(user); // session.save() is deprecated
+            session.merge(user);
             session.getTransaction().commit();
-            log.info("DAO: User inserted. User: {}", user);
+            log.info("DAO: User inserted/updated. User: {}", user);
             return Optional.of(user);
-        }
-    }
-
-    @Override
-    public Optional<User> update(Long id, User user) {
-        try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
-            User userToUpdate = session.find(User.class, id);
-            userToUpdate.setUsername(user.getUsername());
-            userToUpdate.setPassword(user.getPassword());
-            userToUpdate.setFirstName(user.getFirstName());
-            userToUpdate.setLastName(user.getLastName());
-            userToUpdate.setActive(user.isActive());
-//            session.merge(userToUpdate);
-            session.getTransaction().commit();
-            log.info("DAO: User updated. Id: {}, user: {}", id, userToUpdate);
-            return Optional.of(userToUpdate);
-        } catch (HibernateException e) {
-            log.warn("DAO: Error updating User with ID: {}. Error: {}", id, e.getMessage());
-            throw new RuntimeException("Error updating User with ID " + id, e);
         }
     }
 
@@ -68,7 +54,11 @@ public class UserDAOImpl implements EntityDAO<User> {
     @Override
     public List<Optional<User>> findAll() {
         try (Session session = sessionFactory.openSession()) {
-            List<Optional<User>> users = session.createQuery("from User").getResultList();
+            List<Optional<User>> users = session.createQuery(FIND_ALL_USERS_QUERY, User.class)
+                    .getResultList()
+                    .stream()
+                    .map(Optional::ofNullable)
+                    .toList();
             log.info("DAO: Users found. Users: {}", users);
             return users;
         } catch (HibernateException e) {
@@ -78,59 +68,29 @@ public class UserDAOImpl implements EntityDAO<User> {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void delete(User user) {
         try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
-
-            User userToDelete = session.find(User.class, id);
-            session.remove(userToDelete);
+            session.remove(user);
             session.getTransaction().commit();
-            log.info("DAO: User deleted. Id: {}, user: {}", id, userToDelete);
+            log.info("DAO: User deleted. User: {}", user);
         } catch (HibernateException e) {
-            log.warn("DAO: Error delete User with ID: {}. Error: {}", id, e.getMessage());
-            throw new RuntimeException("Error delete User with ID " + id, e);
+            log.warn("DAO: Error delete User: {}. Error: {}", user, e.getMessage());
+            throw new RuntimeException("Error delete User: " + user, e);
         }
     }
 
     @Override
     public Optional<User> findByUserName(String username) {
         try (Session session = sessionFactory.openSession()) {
-            User user = session.createQuery("SELECT u FROM User u WHERE u.username=:value", User.class)
-                    .setParameter("value", username)
+            User user = session.createQuery(FIND_USER_BY_USERNAME_QUERY, User.class)
+                    .setParameter(1, username)
                     .getSingleResultOrNull();
             log.info("DAO: User found by username: {}. User: {}", username, user);
             return Optional.ofNullable(user);
         } catch (HibernateException e) {
             log.warn("DAO: Error to find by username: {}. Error: {}", username, e.getMessage());
             throw new RuntimeException("Error to find by username: " + username, e);
-        }
-    }
-
-    public Optional<User> updatePassword(Long id, String password) {
-        try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
-            User userToUpdate = session.find(User.class, id);
-            userToUpdate.setPassword(password);
-            session.getTransaction().commit();
-            log.info("DAO: User password updated. Id: {}, user: {}", id, userToUpdate);
-            return Optional.of(userToUpdate);
-        } catch (HibernateException e) {
-            log.warn("DAO: Error updating User password with ID: {}. Error: {}", id, e.getMessage());
-            throw new RuntimeException("Error updating User password with ID " + id, e);
-        }
-    }
-
-    public Optional<User> updateActive(Long id, boolean active) {
-        try (Session session = sessionFactory.openSession()) {
-            session.beginTransaction();
-            User userToUpdate = session.find(User.class, id);
-            userToUpdate.setActive(active);
-            session.getTransaction().commit();
-            log.info("DAO: User active updated. Id: {}, user: {}", id, userToUpdate);
-            return Optional.of(userToUpdate);
-        } catch (HibernateException e) {
-            log.warn("Error updating User active with ID: {}. Error: {}", id, e.getMessage());
-            throw new RuntimeException("Error updating User active with ID " + id, e);
         }
     }
 }

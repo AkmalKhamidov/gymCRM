@@ -2,7 +2,6 @@ package com.epamlearning.services;
 
 import com.epamlearning.daos.TrainingTypeDAOImpl;
 import com.epamlearning.exceptions.NotFoundException;
-import com.epamlearning.models.Trainee;
 import com.epamlearning.models.TrainingType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,7 @@ import java.util.Optional;
 @Slf4j
 public class TrainingTypeService implements EntityService<TrainingType>{
 
-    private TrainingTypeDAOImpl trainingTypeDAO;
+    private final TrainingTypeDAOImpl trainingTypeDAO;
 
     @Autowired
     public TrainingTypeService(TrainingTypeDAOImpl trainingTypeDAO) {
@@ -34,6 +33,10 @@ public class TrainingTypeService implements EntityService<TrainingType>{
 
     @Override
     public Optional<TrainingType> findById(Long id) {
+        if(id == null) {
+            log.warn("ID is null.");
+            throw new NullPointerException("ID is null.");
+        }
         Optional<TrainingType> trainingType = trainingTypeDAO.findById(id);
         if (trainingType.isEmpty()) {
             log.warn("TrainingType with ID: {} not found.", id);
@@ -49,7 +52,6 @@ public class TrainingTypeService implements EntityService<TrainingType>{
 
     @Override
     public void deleteById(Long id) {
-
     }
 
     @Override

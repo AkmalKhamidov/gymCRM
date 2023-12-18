@@ -7,11 +7,8 @@ import lombok.Setter;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 
-import java.util.ArrayList;
 import java.util.List;
-
-// TODO: create attribute list<trainees>
-
+import java.util.Objects;
 
 @Entity
 @Table(name = "trainers")
@@ -35,7 +32,7 @@ public class Trainer {
     private TrainingType specialization;
 
     @ManyToMany(mappedBy = "trainers")
-    private List<Trainee> traineeList = new ArrayList<>();
+    private List<Trainee> trainees;
 
     @Override
     public String toString() {
@@ -44,5 +41,18 @@ public class Trainer {
                 ", user=" + user +
                 ", specialization=" + specialization +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Trainer trainer = (Trainer) o;
+        return Objects.equals(id, trainer.id) && Objects.equals(user, trainer.user) && Objects.equals(specialization, trainer.specialization);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, user, specialization);
     }
 }

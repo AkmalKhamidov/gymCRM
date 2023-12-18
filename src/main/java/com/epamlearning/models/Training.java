@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
-// TODO: import to remove duplication for CascadeType
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -34,11 +33,12 @@ public class Training {
 
     @ManyToOne
     @JoinColumn(name="trainer_id", referencedColumnName = "id")
+    @Cascade({CascadeType.PERSIST, CascadeType.MERGE})
     private Trainer trainer;
 
     @ManyToOne
     @JoinColumn(name="trainee_id", referencedColumnName = "id")
-    @Cascade({CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+    @Cascade({CascadeType.PERSIST, CascadeType.MERGE})
     private Trainee trainee;
 
     @ManyToOne

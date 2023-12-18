@@ -28,8 +28,9 @@ public class LogInFacade implements Facade{
     Scanner sc = new Scanner(System.in);
 
     @Override
-    public void getPage() {
-        System.out.flush();
+    public void getPage(String response) {
+        cleanScreen();
+        System.out.println(response + "\n");
         System.out.println("Select to login as Trainee or Trainer");
         System.out.println("1. Trainee");
         System.out.println("2. Trainer");
@@ -38,48 +39,12 @@ public class LogInFacade implements Facade{
         int choice = sc.nextInt();
         sc.nextLine();
 
-        String username;
-        String password;
-
         switch (choice) {
             case 1 -> {
-                boolean isTraineeUserNameAndPasswordMatching = false;
-                do {
-                    System.out.print("Enter your username: ");
-                    username = sc.next();
-                    System.out.print("Enter your password: ");
-                    password = sc.next();
-                    try {
-                        isTraineeUserNameAndPasswordMatching = traineeUserNameAndPasswordMatching(username, password);
-                    } catch (NotAuthenticated e) {
-                        System.out.println("Your username and password does not match.");
-                    } catch (NotFoundException e) {
-                        System.out.println("Trainee with this username not found.");
-                    }
-                    if (isTraineeUserNameAndPasswordMatching) {
-                        traineeFacade.setTraineeUsername(username);
-                        traineeFacade.getPage();
-                    }
-                } while (!isTraineeUserNameAndPasswordMatching);
+                traineeLogin();
             }
             case 2 -> {
-                boolean isTrainerUserNameAndPasswordMatching = false;
-                do {
-                    System.out.print("Enter your username: ");
-                    username = sc.next();
-                    System.out.print("Enter your password: ");
-                    password = sc.next();
-                    try {
-                        isTrainerUserNameAndPasswordMatching = trainerUserNameAndPasswordMatching(username, password);
-                    } catch (NotAuthenticated e) {
-                        System.out.println("Your username and password does not match.");
-                    } catch (NotFoundException e) {
-                        System.out.println("Trainer with this username not found.");
-                    }
-                    if (isTrainerUserNameAndPasswordMatching) {
-                        trainerFacade.getPage();
-                    }
-                } while (!isTrainerUserNameAndPasswordMatching);
+                trainerLogin();
             }
             case 3 -> {
                 System.out.println("Thank you for using Gym CRM");
@@ -90,11 +55,67 @@ public class LogInFacade implements Facade{
         }
     }
 
-    public boolean traineeUserNameAndPasswordMatching(String username, String password) {
+    public void traineeLogin(){
+        String username;
+        String password;
+        Long traineeId = null;
+        boolean isTraineeUserNameAndPasswordMatching = false;
+        do {
+            System.out.print("Enter your username: ");
+            username = sc.next();
+            System.out.print("Enter your password: ");
+            password = sc.next();
+            try {
+                traineeId = traineeAuthenticate(username, password);
+                if(traineeId != null) {
+                    isTraineeUserNameAndPasswordMatching = true;
+                }
+            } catch (NotAuthenticated e) {
+                System.out.println("Your username and password does not match.");
+            } catch (NotFoundException e) {
+                System.out.println("Trainee with this username not found.");
+            }
+            if (isTraineeUserNameAndPasswordMatching) {
+                traineeFacade.setTraineeUsername(username);
+                traineeFacade.setTraineeId(traineeId);
+                traineeFacade.getPage("Successfully logged in.");
+            }
+        } while (!isTraineeUserNameAndPasswordMatching);
+    }
+
+    public void trainerLogin(){
+        String username;
+        String password;
+        Long trainerId = null;
+        boolean isTrainerUserNameAndPasswordMatching = false;
+        do {
+            System.out.print("Enter your username: ");
+            username = sc.next();
+            System.out.print("Enter your password: ");
+            password = sc.next();
+            try {
+                trainerId = trainerAuthenticate(username, password);
+                if(trainerId != null) {
+                    isTrainerUserNameAndPasswordMatching = true;
+                }
+            } catch (NotAuthenticated e) {
+                System.out.println("Your username and password does not match.");
+            } catch (NotFoundException e) {
+                System.out.println("Trainer with this username not found.");
+            }
+            if (isTrainerUserNameAndPasswordMatching) {
+                trainerFacade.setTrainerUsername(username);
+                trainerFacade.setTrainerId(trainerId);
+                trainerFacade.getPage("Successfully logged in.");
+            }
+        } while (!isTrainerUserNameAndPasswordMatching);
+    }
+
+    public Long traineeAuthenticate(String username, String password) {
         return traineeService.authenticate(username, password);
     }
 
-    public boolean trainerUserNameAndPasswordMatching(String username, String password) {
+    public Long trainerAuthenticate(String username, String password) {
         return trainerService.authenticate(username, password);
     }
 

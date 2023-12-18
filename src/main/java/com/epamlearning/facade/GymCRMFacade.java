@@ -1,6 +1,5 @@
 package com.epamlearning.facade;
 
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -10,7 +9,6 @@ import java.util.Scanner;
 // TODO: separate facade for trainee and trainer
 
 @Component
-@Transactional
 @Slf4j
 public class GymCRMFacade implements Facade{
 
@@ -31,8 +29,8 @@ public class GymCRMFacade implements Facade{
     }
 
     @Override
-    public void getPage() {
-        System.out.flush();
+    public void getPage(String response) {
+        cleanScreen();
         System.out.println("Welcome to GymCRM");
         System.out.println("1. Login");
         System.out.println("2. Register");
@@ -40,8 +38,8 @@ public class GymCRMFacade implements Facade{
         System.out.print("Enter your choice: ");
         int choice = sc.nextInt();
         switch (choice) {
-            case 1 -> logInFacade.getPage();
-            case 2 -> signUpFacade.getPage();
+            case 1 -> logInFacade.getPage("");
+            case 2 -> signUpFacade.getPage("");
             case 3 -> System.out.println("Thank you for using Gym CRM");
             default -> System.out.println("Invalid choice");
         }

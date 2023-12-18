@@ -6,6 +6,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,7 +17,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TrainingTypeDAOImpl implements EntityDAO<TrainingType> {
 
-    private SessionFactory sessionFactory;
+    private final SessionFactory sessionFactory;
+
+    @Value("${FIND_ALL_TRAINING_TYPES_QUERY}")
+    private String FIND_ALL_TRAINING_TYPES_QUERY;
 
     @Autowired
     public TrainingTypeDAOImpl(SessionFactory sessionFactory) {
@@ -24,12 +28,7 @@ public class TrainingTypeDAOImpl implements EntityDAO<TrainingType> {
     }
 
     @Override
-    public Optional<TrainingType> save(TrainingType trainingType) {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<TrainingType> update(Long id, TrainingType trainingType) {
+    public Optional<TrainingType> saveOrUpdate(TrainingType trainingType) {
         return Optional.empty();
     }
 
@@ -48,7 +47,7 @@ public class TrainingTypeDAOImpl implements EntityDAO<TrainingType> {
     @Override
     public List<Optional<TrainingType>> findAll() {
         try (Session session = sessionFactory.openSession()) {
-            List<Optional<TrainingType>> trainees = session.createQuery("from TrainingType", TrainingType.class)
+            List<Optional<TrainingType>> trainees = session.createQuery(FIND_ALL_TRAINING_TYPES_QUERY, TrainingType.class)
                     .getResultList()
                     .stream()
                     .map(Optional::ofNullable)
@@ -62,7 +61,7 @@ public class TrainingTypeDAOImpl implements EntityDAO<TrainingType> {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void delete(TrainingType trainingType) {
     }
 
     @Override
