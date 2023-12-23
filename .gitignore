@@ -40,4 +40,4 @@ build/
 
 ### Mac OS ###
 .DS_Store
-src/.DS_Store
+**/.DS_Store
