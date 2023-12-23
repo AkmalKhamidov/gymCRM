@@ -1,11 +1,11 @@
 package com.epamlearning.services;
 
-import com.epamlearning.daos.TraineeDAOImpl;
 import com.epamlearning.exceptions.NotAuthenticated;
 import com.epamlearning.exceptions.NotFoundException;
 import com.epamlearning.models.Trainee;
 import com.epamlearning.models.Trainer;
 import com.epamlearning.models.User;
+import com.epamlearning.repositories.TraineeRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,18 +17,17 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class TraineeService implements EntityService<Trainee> {
+public class TraineeService implements BaseService<Trainee> {
 
-    private final TraineeDAOImpl traineeDAO;
+    private final TraineeRepository traineeRepository;
     private final UserService userService;
+
     @Autowired
     private TrainingService trainingService;
 
-
-
     @Autowired
-    public TraineeService(TraineeDAOImpl traineeDAO, UserService userService) {
-        this.traineeDAO = traineeDAO;
+    public TraineeService(TraineeRepository traineeRepository, UserService userService) {
+        this.traineeRepository = traineeRepository;
         this.userService = userService;
     }
 
@@ -40,7 +39,7 @@ public class TraineeService implements EntityService<Trainee> {
             throw new NullPointerException("ID is null.");
         }
 
-        Optional<Trainee> trainee = traineeDAO.findById(id);
+        Optional<Trainee> trainee = traineeRepository.findById(id);
         if (trainee.isEmpty()) {
             log.warn("Trainee with ID: {} not found.", id);
             throw new NotFoundException("Trainee with ID " + id + " not found.");
@@ -56,7 +55,7 @@ public class TraineeService implements EntityService<Trainee> {
             throw new NullPointerException("Username is null.");
         }
 
-        Optional<Trainee> trainee = traineeDAO.findByUserName(username);
+        Optional<Trainee> trainee = traineeRepository.findByUsername(username);
         if (trainee.isEmpty()) {
             log.warn("Trainee with username: {} not found.", username);
             throw new NotFoundException("Trainee with username " + username + " not found.");
@@ -66,7 +65,7 @@ public class TraineeService implements EntityService<Trainee> {
 
     @Override
     public Optional<Trainee> save(Trainee trainee) {
-        return traineeDAO.saveOrUpdate(trainee);
+        return Optional.of(traineeRepository.save(trainee));
     }
 
     @Override
@@ -81,25 +80,25 @@ public class TraineeService implements EntityService<Trainee> {
         traineeToUpdate.setDateOfBirth(trainee.getDateOfBirth());
         traineeToUpdate.setAddress(trainee.getAddress());
         traineeToUpdate.setUser(trainee.getUser());
-        return traineeDAO.saveOrUpdate(traineeToUpdate);
+        return Optional.of(traineeRepository.save(traineeToUpdate));
     }
 
     @Override
     public List<Optional<Trainee>> findAll() {
-        return traineeDAO.findAll();
+        return traineeRepository.findAll();
     }
 
     @Override
     public void deleteById(Long id) {
         Trainee trainee = findById(id).get();
         trainingService.deleteTrainingsByTraineeId(trainee.getId());
-        traineeDAO.delete(trainee);
+        traineeRepository.delete(trainee);
     }
 
     public void deleteByUsername(String username) {
         Trainee trainee = findByUsername(username).get();
         trainingService.deleteTrainingsByTraineeId(trainee.getId());
-        traineeDAO.delete(trainee);
+        traineeRepository.delete(trainee);
     }
 
     public Long authenticate(String username, String password) {
@@ -126,7 +125,7 @@ public class TraineeService implements EntityService<Trainee> {
         // 2. traineeUpdated.setUser(userService.updateActive(traineeUpdated.get().getUser().getId(), active).get());
 
         traineeUpdated.getUser().setActive(active);
-        return traineeDAO.saveOrUpdate(traineeUpdated);
+        return Optional.of(traineeRepository.save(traineeUpdated));
     }
 
     public Optional<Trainee> updatePassword(Long id, String password) {
@@ -142,7 +141,7 @@ public class TraineeService implements EntityService<Trainee> {
         // 2. traineeUpdated.setUser(userService.updatePassword(traineeUpdated.getUser().getId(), password).get());
 
         traineeUpdated.getUser().setPassword(password);
-        return traineeDAO.saveOrUpdate(traineeUpdated);
+        return Optional.of(traineeRepository.save(traineeUpdated));
     }
 
     public Optional<Trainee> updateTrainersForTrainee(Long traineeId, List<Trainer> trainers) {
@@ -152,11 +151,11 @@ public class TraineeService implements EntityService<Trainee> {
         traineeToUpdate.setTrainers(trainers);
 
         // Save the updated trainee
-        return traineeDAO.saveOrUpdate(traineeToUpdate);
+        return Optional.of(traineeRepository.save(traineeToUpdate));
     }
 
     public List<Optional<Trainer>> findTrainersByTraineeId(Long id) {
-        return traineeDAO.findTrainersByTrainee(findById(id).get());
+        return traineeRepository.findTrainersByTrainee(findById(id).get());
     }
 
     public boolean hasTrainer(Long traineeId, Long trainerId) {

@@ -14,7 +14,7 @@ import java.util.Random;
 
 @Service
 @Slf4j
-public class UserService implements EntityService<User> {
+public class UserService implements BaseService<User> {
 
     private final UserDAOImpl userDAO;
 

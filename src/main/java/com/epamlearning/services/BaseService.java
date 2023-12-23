@@ -1,13 +1,12 @@
 package com.epamlearning.services;
 
-import com.epamlearning.daos.EntityDAO;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public interface EntityService<T> {
+public interface BaseService<T> {
 
         Optional<T> save(T t);
         Optional<T> update(Long id, T t);

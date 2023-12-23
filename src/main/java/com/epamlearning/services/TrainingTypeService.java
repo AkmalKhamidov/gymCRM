@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class TrainingTypeService implements EntityService<TrainingType>{
+public class TrainingTypeService implements BaseService<TrainingType> {
 
     private final TrainingTypeDAOImpl trainingTypeDAO;
 

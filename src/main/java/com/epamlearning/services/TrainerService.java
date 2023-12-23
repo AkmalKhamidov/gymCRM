@@ -16,7 +16,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class TrainerService implements EntityService<Trainer> {
+public class TrainerService implements BaseService<Trainer> {
 
     private final TrainerDAOImpl trainerDAO;
     private final TraineeService traineeService;
