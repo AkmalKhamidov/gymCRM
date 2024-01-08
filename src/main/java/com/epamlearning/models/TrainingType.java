@@ -1,6 +1,7 @@
 package com.epamlearning.models;
 
 
+import com.epamlearning.models.enums.TrainingTypeName;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,11 +17,12 @@ import java.util.Objects;
 public class TrainingType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id",nullable = false)
+    @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "training_type_name",nullable = false)
-    private String trainingTypeName;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "training_type_name", nullable = false)
+    private TrainingTypeName trainingTypeName;
 
     @Override
     public String toString() {

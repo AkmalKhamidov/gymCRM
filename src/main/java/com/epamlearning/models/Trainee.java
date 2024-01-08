@@ -36,7 +36,7 @@ public class Trainee {
             CascadeType.MERGE, CascadeType.PERSIST})
     private User user;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "trainee_trainer",
             joinColumns = @JoinColumn(name = "trainee_id"),
             inverseJoinColumns = @JoinColumn(name = "trainer_id"),

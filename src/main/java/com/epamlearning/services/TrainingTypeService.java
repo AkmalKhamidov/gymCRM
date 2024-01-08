@@ -1,8 +1,8 @@
 package com.epamlearning.services;
 
-import com.epamlearning.daos.TrainingTypeDAOImpl;
 import com.epamlearning.exceptions.NotFoundException;
 import com.epamlearning.models.TrainingType;
+import com.epamlearning.repositories.TrainingTypeRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,40 +14,41 @@ import java.util.Optional;
 @Slf4j
 public class TrainingTypeService implements BaseService<TrainingType> {
 
-    private final TrainingTypeDAOImpl trainingTypeDAO;
+    private final TrainingTypeRepository trainingTypeRepository;
 
     @Autowired
-    public TrainingTypeService(TrainingTypeDAOImpl trainingTypeDAO) {
-        this.trainingTypeDAO = trainingTypeDAO;
+    public TrainingTypeService(TrainingTypeRepository trainingTypeRepository) {
+        this.trainingTypeRepository = trainingTypeRepository;
     }
 
+    // Only Get (Read/select) methods are required and implemented only.
     @Override
-    public Optional<TrainingType> save(TrainingType trainingType) {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<TrainingType> update(Long id, TrainingType trainingType) {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<TrainingType> findById(Long id) {
+    public TrainingType findById(Long id) {
         if(id == null) {
             log.warn("ID is null.");
             throw new NullPointerException("ID is null.");
         }
-        Optional<TrainingType> trainingType = trainingTypeDAO.findById(id);
+        Optional<TrainingType> trainingType = trainingTypeRepository.findById(id);
         if (trainingType.isEmpty()) {
             log.warn("TrainingType with ID: {} not found.", id);
             throw new NotFoundException("TrainingType with ID " + id + " not found.");
         }
-        return trainingType;
+        return trainingType.get();
     }
 
     @Override
-    public List<Optional<TrainingType>> findAll() {
-        return trainingTypeDAO.findAll();
+    public List<TrainingType> findAll() {
+        return trainingTypeRepository.findAll();
+    }
+
+    @Override
+    public TrainingType save(TrainingType trainingType) {
+        return null;
+    }
+
+    @Override
+    public TrainingType update(Long id, TrainingType trainingType) {
+        return null;
     }
 
     @Override
@@ -55,7 +56,7 @@ public class TrainingTypeService implements BaseService<TrainingType> {
     }
 
     @Override
-    public Optional<TrainingType> findByUsername(String username) {
-        return Optional.empty();
+    public TrainingType findByUsername(String username) {
+        return null;
     }
 }

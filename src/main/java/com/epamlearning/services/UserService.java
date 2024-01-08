@@ -1,9 +1,9 @@
 package com.epamlearning.services;
 
-import com.epamlearning.daos.UserDAOImpl;
 import com.epamlearning.exceptions.NotAuthenticated;
 import com.epamlearning.exceptions.NotFoundException;
 import com.epamlearning.models.User;
+import com.epamlearning.repositories.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,45 +16,65 @@ import java.util.Random;
 @Slf4j
 public class UserService implements BaseService<User> {
 
-    private final UserDAOImpl userDAO;
+    private final UserRepository userRepository;
 
     @Autowired
-    public UserService(UserDAOImpl userDAO) {
-        this.userDAO = userDAO;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Override
-    public Optional<User> save(User user) {
-        return userDAO.saveOrUpdate(user);
-    }
-
-    @Override
-    public Optional<User> update(Long id, User user) {
-
+    public User findById(Long id) {
         if (id == null) {
             log.warn("ID is null.");
             throw new NullPointerException("ID is null.");
         }
 
-        userNullVerification(user);
-
-        Optional<User> userUpdatedOptional = userDAO.findById(id);
-        if (userUpdatedOptional.isPresent()) {
-            User userUpdated = userUpdatedOptional.get();
-            userUpdated.setFirstName(user.getFirstName());
-            userUpdated.setLastName(user.getLastName());
-            userUpdated.setUsername(user.getUsername());
-            userUpdated.setPassword(user.getPassword());
-            userUpdated.setActive(user.isActive());
-            return userDAO.saveOrUpdate(userUpdated);
-        } else {
-            log.warn("User with ID: {} not found for update.", id);
-            throw new NotFoundException("User with ID " + id + " not found for update.");
+        Optional<User> user = userRepository.findById(id);
+        if (user.isEmpty()) {
+            log.warn("User with ID: {} not found.", id);
+            throw new NotFoundException("User with ID " + id + " not found.");
         }
+        return user.get();
     }
 
-    public Optional<User> updatePassword(Long id, String password) {
+    @Override
+    public User findByUsername(String username) {
+        if (username == null || username.isEmpty()) {
+            log.warn("Username is null.");
+            throw new NullPointerException("Username is null.");
+        }
+        Optional<User> user = userRepository.findByUsername(username);
+        if (user.isEmpty()) {
+            log.warn("User with username: {} not found.", username);
+            throw new NotFoundException("User with username " + username + " not found.");
+        }
+        return user.get();
+    }
 
+    @Override
+    public User save(User user) {
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User update(Long id, User user) {
+        if (id == null) {
+            log.warn("ID is null.");
+            throw new NullPointerException("ID is null.");
+        }
+        userNullVerification(user);
+
+        User userToUpdate = findById(id);
+        userToUpdate.setFirstName(user.getFirstName());
+        userToUpdate.setLastName(user.getLastName());
+        userToUpdate.setUsername(user.getUsername());
+        userToUpdate.setPassword(user.getPassword());
+        userToUpdate.setActive(user.isActive());
+        return userRepository.save(userToUpdate);
+    }
+
+    public User updatePassword(Long id, String password) {
         if (id == null) {
             log.warn("ID is null.");
             throw new NullPointerException("ID is null.");
@@ -63,87 +83,39 @@ public class UserService implements BaseService<User> {
             log.warn("Password is null.");
             throw new NullPointerException("Password is null.");
         }
-
-        Optional<User> userUpdatedOptional = userDAO.findById(id);
-        if (userUpdatedOptional.isPresent()) {
-            User userUpdated = userUpdatedOptional.get();
-            userUpdated.setPassword(password);
-            return userDAO.saveOrUpdate(userUpdated);
-        } else {
-            log.warn("User with ID: {} not found for password update.", id);
-            throw new NotFoundException("User with ID " + id + " not found for update.");
-        }
+        User userToUpdate = findById(id);
+        userToUpdate.setPassword(password);
+        return userRepository.save(userToUpdate);
     }
 
-    public Optional<User> updateActive(Long id, boolean active) {
-
+    public User updateActive(Long id, boolean active) {
         if (id == null) {
             log.warn("ID is null.");
             throw new NullPointerException("ID is null.");
         }
 
-        Optional<User> userUpdatedOptional = userDAO.findById(id);
-        if (userUpdatedOptional.isPresent()) {
-            User userUpdated = userUpdatedOptional.get();
-            userUpdated.setActive(active);
-            return userDAO.saveOrUpdate(userUpdated);
-        } else {
-            log.warn("User with ID: {} not found for active update.", id);
-            throw new NotFoundException("User with ID " + id + " not found for update.");
-        }
+        User userToUpdate = findById(id);
+        userToUpdate.setActive(active);
+        return userRepository.save(userToUpdate);
     }
 
     @Override
-    public Optional<User> findById(Long id) {
-
-        if (id == null) {
-            log.warn("ID is null.");
-            throw new NullPointerException("ID is null.");
-        }
-
-        Optional<User> user = userDAO.findById(id);
-        if (user.isEmpty()) {
-            log.warn("User with ID: {} not found.", id);
-            throw new NotFoundException("User with ID " + id + " not found.");
-        }
-        return user;
-    }
-
-    @Override
-    public List<Optional<User>> findAll() {
-        return userDAO.findAll();
+    public List<User> findAll() {
+        return userRepository.findAll();
     }
 
     @Override
     public void deleteById(Long id) {
-
         if (id == null) {
             log.warn("ID is null.");
             throw new NullPointerException("ID is null.");
         }
 
-        Optional<User> user = userDAO.findById(id);
-        if (user.isPresent()) {
-            userDAO.delete(user.get());
-        } else {
-            log.warn("User with ID: {} not found for delete.", id);
-            throw new NotFoundException("User with ID " + id + " not found for delete.");
-        }
+        User userToDelete = findById(id);
+        userRepository.delete(userToDelete);
     }
 
-    @Override
-    public Optional<User> findByUsername(String username) {
-        if (username == null || username.isEmpty()) {
-            log.warn("Username is null.");
-            throw new NullPointerException("Username is null.");
-        }
-        Optional<User> user = userDAO.findByUserName(username);
-        if (user.isEmpty()) {
-            log.warn("User with username: {} not found.", username);
-            throw new NotFoundException("User with username " + username + " not found.");
-        }
-        return user;
-    }
+
 
     public Long authenticate(String username, String password) {
         if (username == null || username.isEmpty()) {
@@ -155,13 +127,9 @@ public class UserService implements BaseService<User> {
             throw new NullPointerException("Password is null.");
         }
 
-        Optional<User> user = userDAO.findByUserName(username);
-        if (user.isEmpty()) {
-            log.warn("User with username: {} not found.", username);
-            throw new NotFoundException("User with username " + username + " not found.");
-        }
-        if (user.get().getPassword().equals(password)) {
-            return user.get().getId();
+        User user = findByUsername(username);
+        if (user.getPassword().equals(password)) {
+            return user.getId();
         } else {
             log.warn("Wrong password. Username: {} ", username);
             throw new NotAuthenticated("Wrong password. Username: " + username);
@@ -193,7 +161,7 @@ public class UserService implements BaseService<User> {
         String username = baseUsername;
         int serialNumber = 1;
 
-        while (userDAO.findByUserName(username).isPresent()) {
+        while (userRepository.findByUsername(username).isPresent()) {
             username = baseUsername + serialNumber;
             serialNumber++;
         }

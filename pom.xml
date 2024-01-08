@@ -12,11 +12,27 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <spring.version>6.0.13</spring.version>
+    <spring.version>6.1.2</spring.version>
     <slf4j.version>2.0.9</slf4j.version>
   </properties>
 
   <dependencies>
+
+    <!-- Spring Web for RESTful web services -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>6.1.2</version>
+    </dependency>
+
+
+    <!-- Spring Web MVC for MVC support -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <version>6.1.2</version>
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -52,6 +68,8 @@
       <artifactId>spring-data-jpa</artifactId>
       <version>3.2.1</version>
     </dependency>
+
+
 
     <!-- Spring dependencies -->
     <dependency>

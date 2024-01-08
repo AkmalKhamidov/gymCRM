@@ -8,11 +8,11 @@ import java.util.Optional;
 @Service
 public interface BaseService<T> {
 
-        Optional<T> save(T t);
-        Optional<T> update(Long id, T t);
-        Optional<T> findById(Long id);
-        List<Optional<T>> findAll();
+        T save(T t);
+        T update(Long id, T t);
+        T findById(Long id);
+        List<T> findAll();
         void deleteById(Long id);
 
-        Optional<T> findByUsername(String username);
+        T findByUsername(String username);
 }

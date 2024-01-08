@@ -1,2 +1,2 @@
 # gymCRM
-Epam Learning - Spring Core. GymCRM Project.
+Epam Learning - Spring REST. GymCRM Project.

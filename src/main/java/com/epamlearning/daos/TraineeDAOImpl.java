@@ -21,10 +21,8 @@ public class TraineeDAOImpl implements EntityDAO<Trainee> {
 
     @Value("${FIND_ALL_TRAINEES_QUERY}")
     private String FIND_ALL_TRAINEES_QUERY;
-    @Value("${FIND_TRAINEE_TRAINERS_QUERY}")
-    private String FIND_TRAINEE_TRAINERS_QUERY;
-    @Value("${FIND_TRAINEE_BY_USERNAME_QUERY}")
-    private String FIND_TRAINEE_BY_USERNAME_QUERY;
+//    private String FIND_TRAINEE_TRAINERS_QUERY = ;
+    private String FIND_TRAINEE_BY_USERNAME_QUERY = "SELECT t FROM Trainee t WHERE t.user.username = ?1";
 
     @Autowired
     public TraineeDAOImpl(SessionFactory sessionFactory) {
